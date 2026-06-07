@@ -4,3 +4,4 @@ __pycache__/
 
 # Model checkpoints (keep JSON history files)
 checkpoints/**/*.pt
+checkpoints/*.pt
