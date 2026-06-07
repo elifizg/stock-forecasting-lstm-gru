@@ -17,7 +17,7 @@ This project implements three forecasting tasks on five S&P 500 stocks (**NVDA, 
 | (c) | Weighted rolling-average return forecasting | StockLSTM / StockGRU | MSELoss |
 | (d) | Buy/pass signal detection (γ=1.1) | BidirSignalLSTM / BidirSignalGRU | BCEWithLogitsLoss |
 
-An ablation study over 5 hyperparameter configurations (20 models total) identifies the best architecture per task.
+An ablation study over 5 hyperparameter configurations (30 runs total: 5 configs × 2 architectures × 3 target modes) identifies the best architecture per task.
 
 ---
 
@@ -32,10 +32,10 @@ An ablation study over 5 hyperparameter configurations (20 models total) identif
 
 ### Part (c) — Rolling Average Forecasting
 
-| Model | Return MSE | Rolling MSE | Improvement |
-|---|---|---|---|
-| LSTM | 0.002472 | 0.001824 | −26.2% |
-| GRU | 0.002477 | 0.001815 | −26.7% |
+| Model | Return Config | Return MSE | Rolling Config | Rolling MSE | Improvement |
+|---|---|---|---|---|---|
+| LSTM | B | 0.002472 | D | 0.001824 | −26.2% |
+| GRU | D | 0.002477 | B | 0.001815 | −26.7% |
 
 ### Part (d) — Buy Signal Detection (γ=1.1, threshold=0.3)
 
@@ -55,7 +55,7 @@ stock-forecasting-lstm-gru/
 ├── dataset.py          # Data download, split, normalisation, DataLoader
 ├── train.py            # Training loop (AdamW + early stopping)
 ├── test.py             # Evaluation & metrics
-├── ablation.py         # Automated ablation study (20 models)
+├── ablation.py         # Automated ablation study (30 runs)
 ├── visualization.py    # All report figures
 │
 ├── models/
@@ -87,7 +87,7 @@ pip install -r requirements.txt
 python dataset.py
 ```
 
-### 2. Run ablation study (trains all 20 models, ~60 min on CPU)
+### 2. Run ablation study (trains all 30 models, ~90 min on CPU)
 ```bash
 python ablation.py
 ```
