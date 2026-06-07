@@ -75,7 +75,7 @@ stock-forecasting-lstm-gru/
 ## Setup
 
 ```bash
-pip install torch yfinance scikit-learn matplotlib pandas numpy
+pip install -r requirements.txt
 ```
 
 ---

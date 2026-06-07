@@ -1,0 +1,6 @@
+# Python
+__pycache__/
+*.pyc
+
+# Model checkpoints (keep JSON history files)
+checkpoints/**/*.pt
