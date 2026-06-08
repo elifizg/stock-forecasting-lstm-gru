@@ -45,7 +45,7 @@ p(t+d), p(t+d−1), and p(t+d−2), with weights [0.6, 0.3, 0.1].
 | Model | Accuracy | F1 | AUC |
 |---|---|---|---|
 | BidirLSTM | 0.700 | 0.253 | 0.602 |
-| BidirGRU | 0.688 | 0.250 | 0.601 |
+| BidirGRU | 0.688 | 0.249 | 0.601 |
 
 The signal label uses the assignment threshold in price-ratio form:
 High(t+d) / Close(t) > 1.1, which is equivalent to a return ratio greater than 0.1.
