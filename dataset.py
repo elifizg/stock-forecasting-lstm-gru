@@ -215,28 +215,39 @@ def compute_rolling_targets(
     Part (c) – Compute weighted rolling-average return ratios.
 
     Instead of using a single future closing price, the target is a weighted
-    average of l + 1 consecutive closing prices around day t + d:
+    average of ``window`` consecutive closing prices ending at day ``t + d``:
 
-        r̂_{t+d} = (Σ_{j=0}^{l} w_j · p_{t+d-j}  -  p_t) / p_t
+        r̂_{t+d} = (Σ_{j=0}^{window-1} w_j · p_{t+d-j}  -  p_t) / p_t
 
-    With equal weights (w_j = 1/(l+1)) and window l = 3, the numerator
-    averages four consecutive prices centred on t + d. This smoothing reduces
-    noise in the target signal and is expected to produce more stable training
-    loss compared to Part (b).
+    For the assignment setting, ``window = 3`` and ``weights = [0.6, 0.3, 0.1]``.
+    Therefore the target uses p_{t+d}, p_{t+d-1}, and p_{t+d-2}, assigning
+    the largest weight to the most recent future price. This smoothing reduces
+    the effect of single-day price spikes compared with the exact-return target
+    in Part (b).
 
     Parameters
     ----------
     prices  : 1-D array of raw closing prices
     t       : index of the last day in the look-back window
     horizon : number of future days to forecast (D = 5)
-    window  : rolling-average window size (l = 3)
-    weights : list of l weights summing to 1
+    window  : number of prices used in the rolling target (l = 3)
+    weights : list of ``window`` weights summing to 1
 
     Returns
     -------
     np.ndarray of shape (horizon,)
     """
     weights = np.array(weights, dtype=np.float32)
+    if len(weights) != window:
+        raise ValueError(
+            f"ROLLING_WINDOW={window} requires {window} weights, "
+            f"but got {len(weights)} weights."
+        )
+
+    weight_sum = float(weights.sum())
+    if not np.isclose(weight_sum, 1.0):
+        weights = weights / (weight_sum + 1e-8)
+
     pt = float(prices[t])
     targets = np.zeros(horizon, dtype=np.float32)
 
@@ -261,16 +272,18 @@ def compute_buy_targets(
     """
     Part (d) – Generate a binary buy / pass signal for algorithmic trading.
 
-    The return ratio is computed using the maximum (High) price observed on
-    each future trading day, rather than the closing price:
+    The assignment states the turning-point threshold in price-ratio form
+    with γ = 1.1. Therefore, a buy signal is issued if the High price on
+    any of the next D days exceeds 1.1 times the current closing price:
+
+        p^max_{t+d} / p_t > γ.
+
+    Equivalently, this is the same as requiring the High-price return
 
         r_{t+d} = (p^max_{t+d} - p_t) / p_t
 
-    where p^max_{t+d} is the High price on day t + d and p_t is the current
-    closing price. A buy signal (label = 1) is issued if any d-day return
-    exceeds the threshold γ - 1 (i.e., a gain of more than 10 % for γ = 1.1)
-    within the forecast horizon d = 1, …, 5. Otherwise, a pass signal
-    (label = 0) is issued.
+    to exceed γ - 1 = 0.1, i.e. a gain of more than 10%. Otherwise, a
+    pass signal (label = 0) is issued.
 
     Parameters
     ----------
@@ -278,7 +291,7 @@ def compute_buy_targets(
     close_prices : 1-D array of raw daily Close prices (baseline p_t)
     t            : index of the last day in the look-back window
     horizon      : number of future days to check (D = 5)
-    threshold    : return threshold γ (default 1.1 → 10 % gain)
+    threshold    : price-ratio threshold γ (default 1.1 → 10% gain)
 
     Returns
     -------
@@ -288,8 +301,8 @@ def compute_buy_targets(
     for d in range(1, horizon + 1):
         idx = t + d
         if idx < len(high_prices):
-            r = (float(high_prices[idx]) - pt) / (pt + 1e-8)
-            if r > (threshold - 1.0):
+            price_ratio = float(high_prices[idx]) / (pt + 1e-8)
+            if price_ratio > threshold:
                 return 1
     return 0
 

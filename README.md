@@ -14,8 +14,8 @@ This project implements three forecasting tasks on five S&P 500 stocks (**NVDA, 
 | Part | Task | Architecture | Loss |
 |---|---|---|---|
 | (b) | Exact d-day return forecasting (d=1…5) | StockLSTM / StockGRU | MSELoss |
-| (c) | Weighted rolling-average return forecasting | StockLSTM / StockGRU | MSELoss |
-| (d) | Buy/pass signal detection (γ=1.1) | BidirSignalLSTM / BidirSignalGRU | BCEWithLogitsLoss |
+| (c) | Weighted rolling-average return forecasting (l=3, weights=[0.6, 0.3, 0.1]) | StockLSTM / StockGRU | MSELoss |
+| (d) | Buy/pass signal detection (price-ratio γ=1.1, equivalent to return > 0.1) | BidirSignalLSTM / BidirSignalGRU | BCEWithLogitsLoss |
 
 An ablation study over 5 hyperparameter configurations (30 runs total: 5 configs × 2 architectures × 3 target modes) identifies the best architecture per task.
 
@@ -37,12 +37,18 @@ An ablation study over 5 hyperparameter configurations (30 runs total: 5 configs
 | LSTM | B | 0.002472 | D | 0.001824 | −26.2% |
 | GRU | D | 0.002477 | B | 0.001815 | −26.7% |
 
-### Part (d) — Buy Signal Detection (γ=1.1, threshold=0.3)
+The rolling-average target uses a 3-day weighted window over future prices:
+p(t+d), p(t+d−1), and p(t+d−2), with weights [0.6, 0.3, 0.1].
+
+### Part (d) — Buy Signal Detection (price-ratio γ=1.1, decision threshold=0.3)
 
 | Model | Accuracy | F1 | AUC |
 |---|---|---|---|
 | BidirLSTM | 0.700 | 0.253 | 0.602 |
 | BidirGRU | 0.688 | 0.250 | 0.601 |
+
+The signal label uses the assignment threshold in price-ratio form:
+High(t+d) / Close(t) > 1.1, which is equivalent to a return ratio greater than 0.1.
 
 ---
 
@@ -66,7 +72,7 @@ stock-forecasting-lstm-gru/
 │   └── bidir_gru.py    # BidirSignalGRU  — Part (d)
 │
 ├── data/               # Cached CSV files (auto-created)
-├── checkpoints/        # Saved model weights (auto-created)
+├── checkpoints/        # Training histories are included; .pt model weights are auto-created during training
 └── results/            # Generated figures (auto-created)
 ```
 
@@ -93,6 +99,10 @@ python ablation.py
 ```
 
 Best checkpoints are automatically copied to `checkpoints/` after ablation.
+
+Note: Pretrained `.pt` checkpoint files may not be included in the repository.
+If checkpoints are missing, run `python ablation.py` or the relevant `train.py`
+commands before evaluation.
 
 ### 3. Evaluate best models
 ```bash
@@ -147,7 +157,7 @@ Daily OHLC data downloaded via `yfinance` for 5 S&P 500 tickers:
 | C | 256 | 3 | 0.3 | [5, 10] | 6 |
 | D | 256 | 3 | 0.2 | [5, 10, 20] | 7 |
 
-**Best overall:** Config B (hidden=256, layers=2, dropout=0.3, MA=[5,10])
+**Selected best configs:** Return — LSTM B, GRU D; Rolling — LSTM D, GRU B; Signal — B for both bidirectional models.
 
 ---
 
